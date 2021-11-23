@@ -1,3 +1,5 @@
+import { reverseLexerLookup, validSymbols } from 'src/athena-lexer/dictionary';
+import { mulDivideType } from 'src/athena-parser/athena-parser.service';
 import { IToken, ITokenNumber } from 'src/types';
 
 export interface INode {
@@ -6,10 +8,11 @@ export interface INode {
   rightNode: ITokenNumber;
 }
 export class BinaryOperationOnNode {
+  static stringForm: string = '';
   node: {
-    leftNode: ITokenNumber;
+    leftNode: any;
     operationToPerform: IToken;
-    rightNode: ITokenNumber;
+    rightNode: any;
   } = {
     leftNode: { type: '', value: 0 },
     operationToPerform: {
@@ -21,7 +24,7 @@ export class BinaryOperationOnNode {
       value: 0
     }
   };
-  constructor(
+  step(
     leftNode: ITokenNumber,
     operationToPerform: IToken,
     rightNode: ITokenNumber
@@ -29,10 +32,18 @@ export class BinaryOperationOnNode {
     this.node['leftNode'] = leftNode;
     this.node['operationToPerform'] = operationToPerform;
     this.node['rightNode'] = rightNode;
-    console.log('this.node', this.node);
   }
+  isMulDivideType = (
+    currentCharacter: 'AT_MULTIPLY' | 'AT_DIVIDE',
+    operationArr: mulDivideType = ['AT_MULTIPLY', 'AT_DIVIDE', 'AT_OPERATION']
+  ) => {
+    console.log('currentCharacter', currentCharacter, operationArr);
+    return operationArr.some(
+      (element: validSymbols) => currentCharacter === element
+    );
+  };
   getNodeValue() {
-    return this.node;
+    return JSON.parse(JSON.stringify(this.node));
   }
   stringBuilder() {
     if (
@@ -40,7 +51,9 @@ export class BinaryOperationOnNode {
       this.node.operationToPerform !== undefined &&
       this.node.rightNode !== undefined
     )
-      return `(${this.node.leftNode.value},${this.node.operationToPerform.value},${this.node.rightNode.value})`;
+      return `(${this.node.leftNode.value},${
+        reverseLexerLookup[this.node.operationToPerform.value]
+      },${this.node.rightNode.value})`;
     else {
       throw 'Something is wrong with the expression please recheck';
     }

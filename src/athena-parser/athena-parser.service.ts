@@ -7,9 +7,9 @@ interface IParseExpression {
   position: number;
   currentCharacter: ITokenNumber;
 }
-type mulDivideType = ['AT_MULTIPLY', 'AT_DIVIDE', 'AT_OPERATION'];
-type addSubType = ['AT_PLUS', 'AT_MINUS', 'AT_OPERATION'];
-type intOrFloat = ['AT_INTEGER', 'AT_FLOAT'];
+export type mulDivideType = ['AT_MULTIPLY', 'AT_DIVIDE', 'AT_OPERATION'];
+export type addSubType = ['AT_PLUS', 'AT_MINUS', 'AT_OPERATION'];
+export type intOrFloat = ['AT_INTEGER', 'AT_FLOAT'];
 
 export class AthenaParserService {
   parseExpression: IParseExpression = {
@@ -31,17 +31,17 @@ export class AthenaParserService {
         : undefined;
   }
   factor = () => {
+    console.log('in Factor');
     const token = this.parseExpression.currentCharacter;
     const isValidType = this.isFactorOrTerm(token, ['AT_INTEGER', 'AT_FLOAT']);
     if (isValidType) {
       this.nextCharacter();
       const numberNode = new NumberNode(token);
       return numberNode.token;
-    } else {
-      console.error('you have entered a unknown type');
     }
   };
   term = () => {
+    console.log('in term');
     return this.commonBinaryOperation(this.factor, [
       'AT_MULTIPLY',
       'AT_DIVIDE',
@@ -49,13 +49,14 @@ export class AthenaParserService {
     ]);
   };
 
-  expr = () => {
+  expr() {
+    console.log('in Expr');
     return this.commonBinaryOperation(this.term, [
       'AT_PLUS',
       'AT_MINUS',
       'AT_OPERATION'
     ]);
-  };
+  }
   isFactorOrTerm = (
     currentCharacter: ITokenNumber,
     operationArr: mulDivideType | addSubType | intOrFloat
@@ -71,33 +72,29 @@ export class AthenaParserService {
       }
     });
   commonBinaryOperation(
-    factorOrTerm: Function,
-    operationArr: mulDivideType | addSubType | intOrFloat
+    factorOrTermFn: Function,
+    operationArr: mulDivideType | addSubType
   ): IExpressionNodes {
     try {
-      let left = factorOrTerm();
+      let node = factorOrTermFn();
       let stringForm = '';
-      let count = 0;
+      let count = 1;
 
       while (
-        this.isFactorOrTerm(
-          this.parseExpression.currentCharacter,
-          operationArr
-        ) === true
+        this.isFactorOrTerm(this.parseExpression.currentCharacter, operationArr)
       ) {
         const operationToPerformToken = this.parseExpression.currentCharacter;
         this.nextCharacter();
+        const right = factorOrTermFn();
+
+        const binaryOperationOnNode = new BinaryOperationOnNode();
+        binaryOperationOnNode.step(node, operationToPerformToken, right);
+        const value = binaryOperationOnNode.getNodeValue();
         count += 1;
-        const right = factorOrTerm();
-        const binaryOperationOnNode = new BinaryOperationOnNode(
-          left,
-          operationToPerformToken,
-          right
-        );
-        left = binaryOperationOnNode.getNodeValue();
-        stringForm += binaryOperationOnNode.stringBuilder();
+        node = value;
+        console.log(`${count}. abstractSyntaxTree`, node);
       }
-      return left;
+      return node;
     } catch (error) {
       console.log('Something went wrong please re check the input expression');
       console.error(error);
